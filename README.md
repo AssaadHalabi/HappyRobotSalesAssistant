@@ -38,6 +38,8 @@ Business routes require a generated DB-backed `x-api-key` with the `happyrobot` 
 ```text
 GET    /health
 POST   /api/admin/bootstrap-key
+POST   /api/admin/database/init
+GET    /api/admin/database/status
 POST   /api/admin/api-keys
 GET    /api/admin/api-keys
 DELETE /api/admin/api-keys/{key_id}

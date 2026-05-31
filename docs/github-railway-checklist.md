@@ -112,6 +112,27 @@ Expected:
 
 ## 7. Bootstrap First Admin API Key
 
+If the tables were not created during startup, force the schema initialization first:
+
+```bash
+curl -X POST https://YOUR-RAILWAY-DOMAIN/api/admin/database/init \
+  -H "x-bootstrap-token: YOUR_ADMIN_BOOTSTRAP_TOKEN"
+```
+
+Expected response:
+
+```json
+{
+  "schema_ready": true,
+  "tables": {
+    "calls": true,
+    "call_events": true,
+    "offer_evaluations": true,
+    "api_keys": true
+  }
+}
+```
+
 Run this once:
 
 ```bash

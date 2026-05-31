@@ -13,7 +13,7 @@ from app.api_keys import create_api_key, has_active_admin_key, list_api_keys, re
 from app.calls import build_call_event, build_call_summary
 from app.config import get_settings
 from app.dashboard import render_dashboard
-from app.database import close_pool, ensure_schema
+from app.database import close_pool, database_status, ensure_schema
 from app.pricing import evaluate_offer_policy
 from app.repository import get_metrics, store_call_event, store_offer_evaluation, upsert_call_summary
 
@@ -106,6 +106,22 @@ def health() -> dict[str, Any]:
         "runtime": "fastapi-railway",
         "time": datetime.now(timezone.utc).isoformat(),
     }
+
+
+@app.post("/api/admin/database/init", dependencies=[Depends(require_bootstrap_token)])
+def initialize_database() -> dict[str, Any]:
+    try:
+        return ensure_schema(force=True)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Database initialization failed: {exc}") from exc
+
+
+@app.get("/api/admin/database/status", dependencies=[Depends(require_bootstrap_token)])
+def get_database_status() -> dict[str, Any]:
+    try:
+        return database_status()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Database status check failed: {exc}") from exc
 
 
 @app.post("/api/admin/bootstrap-key", dependencies=[Depends(require_bootstrap_token)])

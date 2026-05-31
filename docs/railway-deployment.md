@@ -67,6 +67,20 @@ You can also run [db/schema.sql](../db/schema.sql) manually in Supabase before d
 
 ## API Key Management
 
+If the database tables were not created on startup, force schema initialization:
+
+```bash
+curl -X POST https://YOUR-RAILWAY-DOMAIN/api/admin/database/init \
+  -H "x-bootstrap-token: YOUR_LONG_RANDOM_ONE_TIME_BOOTSTRAP_TOKEN"
+```
+
+You can also inspect database connectivity and table presence:
+
+```bash
+curl https://YOUR-RAILWAY-DOMAIN/api/admin/database/status \
+  -H "x-bootstrap-token: YOUR_LONG_RANDOM_ONE_TIME_BOOTSTRAP_TOKEN"
+```
+
 Bootstrap the first admin key:
 
 ```bash
