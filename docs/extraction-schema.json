@@ -1,0 +1,107 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "call_id": {
+      "type": ["string", "null"],
+      "description": "HappyRobot call, conversation, or session identifier if available."
+    },
+    "mc_number": {
+      "type": ["string", "null"],
+      "description": "Carrier MC number provided by the caller."
+    },
+    "carrier_name": {
+      "type": ["string", "null"],
+      "description": "Carrier or company name confirmed during the call."
+    },
+    "carrier_eligibility": {
+      "type": ["string", "null"],
+      "enum": ["eligible", "not_eligible", "unknown", null]
+    },
+    "eligibility_reason": {
+      "type": ["string", "null"],
+      "description": "Short reason for the eligibility decision."
+    },
+    "reference_number": {
+      "type": ["string", "null"],
+      "description": "Load reference number discussed with the caller."
+    },
+    "load_id": {
+      "type": ["string", "null"],
+      "description": "Internal load identifier if available."
+    },
+    "origin": {
+      "type": ["string", "null"]
+    },
+    "destination": {
+      "type": ["string", "null"]
+    },
+    "pickup_datetime": {
+      "type": ["string", "null"]
+    },
+    "delivery_datetime": {
+      "type": ["string", "null"]
+    },
+    "equipment_type": {
+      "type": ["string", "null"]
+    },
+    "loadboard_rate": {
+      "type": ["number", "null"]
+    },
+    "offer_rate": {
+      "type": ["number", "null"],
+      "description": "First carrier counter-offer if one was made."
+    },
+    "final_rate": {
+      "type": ["number", "null"],
+      "description": "Agreed rate if the call ended in a booking."
+    },
+    "negotiation_rounds": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "transfer_status": {
+      "type": ["string", "null"],
+      "description": "Mock transfer result, for example mock_transfer_successful."
+    },
+    "call_outcome": {
+      "type": ["string", "null"],
+      "enum": ["booked", "rate_too_high", "not_eligible", "no_matching_load", "not_interested", "no_agreement", "transferred", null]
+    },
+    "carrier_sentiment": {
+      "type": ["string", "null"],
+      "enum": ["positive", "neutral", "negative", null]
+    },
+    "decline_reason": {
+      "type": ["string", "null"]
+    },
+    "notes": {
+      "type": ["string", "null"],
+      "description": "One to two sentence summary of the call."
+    }
+  },
+  "required": [
+    "call_id",
+    "mc_number",
+    "carrier_name",
+    "carrier_eligibility",
+    "eligibility_reason",
+    "reference_number",
+    "load_id",
+    "origin",
+    "destination",
+    "pickup_datetime",
+    "delivery_datetime",
+    "equipment_type",
+    "loadboard_rate",
+    "offer_rate",
+    "final_rate",
+    "negotiation_rounds",
+    "transfer_status",
+    "call_outcome",
+    "carrier_sentiment",
+    "decline_reason",
+    "notes"
+  ]
+}

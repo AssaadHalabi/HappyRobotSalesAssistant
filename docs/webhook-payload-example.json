@@ -1,0 +1,28 @@
+{
+  "call_id": "{{call.id}}",
+  "transcript": "{{transcript}}",
+  "extract": {
+    "mc_number": "{{extract.mc_number}}",
+    "carrier_name": "{{extract.carrier_name}}",
+    "carrier_eligibility": "{{extract.carrier_eligibility}}",
+    "eligibility_reason": "{{extract.eligibility_reason}}",
+    "reference_number": "{{extract.reference_number}}",
+    "load_id": "{{extract.load_id}}",
+    "origin": "{{extract.origin}}",
+    "destination": "{{extract.destination}}",
+    "pickup_datetime": "{{extract.pickup_datetime}}",
+    "delivery_datetime": "{{extract.delivery_datetime}}",
+    "equipment_type": "{{extract.equipment_type}}",
+    "loadboard_rate": "{{extract.loadboard_rate}}",
+    "offer_rate": "{{extract.offer_rate}}",
+    "final_rate": "{{extract.final_rate}}",
+    "negotiation_rounds": "{{extract.negotiation_rounds}}",
+    "transfer_status": "{{extract.transfer_status}}",
+    "decline_reason": "{{extract.decline_reason}}",
+    "notes": "{{extract.notes}}"
+  },
+  "classification": {
+    "call_outcome": "{{classify.call_outcome}}",
+    "carrier_sentiment": "{{classify.carrier_sentiment}}"
+  }
+}
