@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from functools import lru_cache
 
 
 @dataclass(frozen=True)
@@ -12,10 +13,12 @@ class Settings:
     max_rate_above_loadboard_pct: float
     pg_pool_min: int
     pg_pool_max: int
+    pg_connect_timeout: int
     allowed_origins: list[str]
     environment: str
 
 
+@lru_cache(maxsize=1)
 def get_settings() -> Settings:
     origins = os.getenv("ALLOWED_ORIGINS", "*")
     return Settings(
@@ -25,6 +28,7 @@ def get_settings() -> Settings:
         max_rate_above_loadboard_pct=float(os.getenv("MAX_RATE_ABOVE_LOADBOARD_PCT", "8")),
         pg_pool_min=int(os.getenv("PG_POOL_MIN", "1")),
         pg_pool_max=int(os.getenv("PG_POOL_MAX", "5")),
+        pg_connect_timeout=int(os.getenv("PG_CONNECT_TIMEOUT", "10")),
         allowed_origins=[origin.strip() for origin in origins.split(",") if origin.strip()],
         environment=os.getenv("ENVIRONMENT", "local"),
     )

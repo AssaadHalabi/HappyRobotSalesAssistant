@@ -4,10 +4,10 @@ This service deploys to Railway as a Dockerized FastAPI application.
 
 ## Architecture
 
-- Railway web service
+- Railway web service + Railway Postgres plugin (same project)
 - Root `Dockerfile`
 - FastAPI + Uvicorn
-- Supabase Postgres through the transaction pooler
+- PostgreSQL connection via Railway service reference variable
 - DB-backed generated API keys for business and admin access
 - HappyRobot remains responsible for voice AI, extraction, and classification
 
@@ -16,7 +16,7 @@ This service deploys to Railway as a Dockerized FastAPI application.
 ```text
 ADMIN_BOOTSTRAP_TOKEN=YOUR_LONG_RANDOM_ONE_TIME_BOOTSTRAP_TOKEN
 API_KEY_PEPPER=YOUR_LONG_RANDOM_SERVER_SIDE_PEPPER
-DATABASE_URL=postgresql://USER:PASSWORD@aws-0-REGION.pooler.supabase.com:6543/postgres?sslmode=require
+DATABASE_URL=${{Postgres.DATABASE_URL}}
 MAX_RATE_ABOVE_LOADBOARD_PCT=8
 PG_POOL_MIN=1
 PG_POOL_MAX=5
@@ -30,8 +30,13 @@ Generate the two secrets with:
 python scripts/generate_secrets.py
 ```
 
-Use Supabase's transaction pooler URL for `DATABASE_URL`.
-The app disables psycopg prepared statements for pooler compatibility.
+`DATABASE_URL` uses Railway's reference variable syntax to automatically resolve
+to the internal Postgres connection string. The app handles `postgres://` →
+`postgresql://` conversion and URL-encodes special characters in the password
+automatically.
+
+The app disables psycopg prepared statements (`prepare_threshold=None`) for
+pooler compatibility.
 
 `ADMIN_BOOTSTRAP_TOKEN` is only for creating the first admin API key. After an active admin key exists, the bootstrap endpoint returns `409`.
 `API_KEY_PEPPER` is used to hash generated API keys before storing them.
@@ -40,15 +45,16 @@ The app disables psycopg prepared statements for pooler compatibility.
 
 1. Push this repo to GitHub.
 2. Create a new Railway project.
-3. Choose `Deploy from GitHub repo`.
-4. Add the environment variables above.
-5. Railway should detect the root `Dockerfile`.
-6. Generate or attach a Railway domain.
-7. Confirm `GET /health` returns `{"ok": true, ...}`.
-8. Bootstrap the first admin API key.
-9. Use the admin API key to generate a HappyRobot API key.
+3. Add a **Postgres** plugin to the project (right-click canvas → Database → PostgreSQL).
+4. Add a new service → **Deploy from GitHub repo**.
+5. In the service's Variables tab, add all variables above. Use `${{Postgres.DATABASE_URL}}` to reference the plugin.
+6. Railway detects the root `Dockerfile` and deploys.
+7. Generate or attach a Railway domain.
+8. Confirm `GET /health` returns `{"ok": true, ...}`.
+9. Bootstrap the first admin API key.
+10. Use the admin API key to generate a HappyRobot API key.
 
-The Docker command uses Railway's `PORT` variable:
+The start command uses Railway's injected `PORT` variable:
 
 ```text
 uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
@@ -56,14 +62,16 @@ uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
 
 ## Database
 
-The app creates the required tables on startup when `DATABASE_URL` is present:
+The app creates the required tables on startup when `DATABASE_URL` is present
+(with retry logic for Railway cold-start race conditions):
 
 - `calls`
 - `call_events`
 - `offer_evaluations`
 - `api_keys`
 
-You can also run [db/schema.sql](../db/schema.sql) manually in Supabase before deployment.
+You can also run [db/schema.sql](../db/schema.sql) manually against the Railway
+Postgres instance via `railway connect postgres`.
 
 ## API Key Management
 

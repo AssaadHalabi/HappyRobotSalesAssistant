@@ -1,19 +1,63 @@
 from __future__ import annotations
 
+import logging
+import time
 from contextlib import contextmanager
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Iterator
+from urllib.parse import quote_plus, unquote, urlparse
 
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 
 from app.config import get_settings
 
+logger = logging.getLogger(__name__)
 
 _pool: ConnectionPool | None = None
 _schema_ready = False
 EXPECTED_TABLES = ("calls", "call_events", "offer_evaluations", "api_keys")
+
+MAX_CONNECT_RETRIES = 5
+RETRY_BASE_DELAY_S = 2.0
+
+
+def normalize_database_url(raw_url: str) -> str:
+    """Normalize a DATABASE_URL for psycopg3 compatibility.
+
+    Handles two common Railway/provider issues:
+    1. postgres:// scheme → postgresql:// (psycopg3 requirement)
+    2. Special characters in password that break URI parsing
+
+    Uses regex-based extraction because stdlib urlparse treats '?' as a netloc
+    delimiter, breaking passwords that contain '?' or '@'.
+    """
+    import re
+
+    url = raw_url.strip()
+
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://"):]
+
+    m = re.match(
+        r"^(?P<scheme>postgresql)://"
+        r"(?P<user>[^:]+):(?P<password>.+)"
+        r"@(?P<host>[^/:?]+)"
+        r"(?::(?P<port>\d+))?"
+        r"(?P<rest>/.*)?$",
+        url,
+    )
+    if not m:
+        return url
+
+    user = quote_plus(unquote(m.group("user")))
+    password = quote_plus(unquote(m.group("password")))
+    host = m.group("host")
+    port = f":{m.group('port')}" if m.group("port") else ""
+    rest = m.group("rest") or ""
+
+    return f"postgresql://{user}:{password}@{host}{port}{rest}"
 
 
 def get_pool() -> ConnectionPool:
@@ -25,14 +69,38 @@ def get_pool() -> ConnectionPool:
     if not settings.database_url:
         raise RuntimeError("DATABASE_URL is not configured.")
 
-    _pool = ConnectionPool(
-        conninfo=settings.database_url,
+    conninfo = normalize_database_url(settings.database_url)
+    logger.info("Initializing connection pool (host=%s)", urlparse(conninfo).hostname)
+
+    pool = ConnectionPool(
+        conninfo=conninfo,
         min_size=settings.pg_pool_min,
         max_size=settings.pg_pool_max,
         kwargs={"autocommit": True, "row_factory": dict_row, "prepare_threshold": None},
-        open=True,
+        open=False,
     )
-    return _pool
+
+    for attempt in range(1, MAX_CONNECT_RETRIES + 1):
+        try:
+            pool.open(wait=True, timeout=10.0)
+            pool.check()
+            logger.info("Connection pool ready (attempt %d/%d)", attempt, MAX_CONNECT_RETRIES)
+            _pool = pool
+            return _pool
+        except Exception as exc:
+            if attempt == MAX_CONNECT_RETRIES:
+                logger.error("Failed to connect after %d attempts: %s", MAX_CONNECT_RETRIES, exc)
+                raise RuntimeError(
+                    f"Could not establish database connection after {MAX_CONNECT_RETRIES} attempts: {exc}"
+                ) from exc
+            delay = RETRY_BASE_DELAY_S * (2 ** (attempt - 1))
+            logger.warning(
+                "Connection attempt %d/%d failed (%s), retrying in %.1fs...",
+                attempt, MAX_CONNECT_RETRIES, exc, delay,
+            )
+            time.sleep(delay)
+
+    raise RuntimeError("Unreachable")
 
 
 @contextmanager

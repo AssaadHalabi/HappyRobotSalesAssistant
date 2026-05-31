@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+import sys
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from json import JSONDecodeError
@@ -17,6 +19,13 @@ from app.database import close_pool, database_status, ensure_schema
 from app.pricing import evaluate_offer_policy
 from app.repository import get_metrics, store_call_event, store_offer_evaluation, upsert_call_summary
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    stream=sys.stdout,
+)
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -26,10 +35,20 @@ async def lifespan(_: FastAPI):
         or settings.api_key_pepper == "dev-api-key-pepper"
     ):
         raise RuntimeError("ADMIN_BOOTSTRAP_TOKEN and API_KEY_PEPPER must be configured in production.")
+
     if settings.database_url:
-        ensure_schema()
+        logger.info("Connecting to database...")
+        try:
+            ensure_schema()
+            logger.info("Database schema ready.")
+        except Exception:
+            logger.exception("Database initialization failed — service will start but DB operations will error.")
+    else:
+        logger.warning("DATABASE_URL not set — running without persistence.")
+
     yield
     close_pool()
+    logger.info("Connection pool closed.")
 
 
 app = FastAPI(
