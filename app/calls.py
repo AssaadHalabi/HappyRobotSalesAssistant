@@ -21,6 +21,13 @@ def unpack_summary(payload: dict[str, Any]) -> dict[str, Any]:
 
 def build_call_summary(payload: dict[str, Any]) -> dict[str, Any]:
     data = unpack_summary(payload)
+    duration = pick(data, "duration_seconds", "duration", "call_duration")
+    if duration is not None:
+        try:
+            duration = int(float(str(duration).strip()))
+        except (TypeError, ValueError):
+            duration = None
+
     return {
         "call_id": text(pick(data, "call_id", "conversation_id", "session_id")) or str(uuid4()),
         "started_at": text(pick(data, "started_at", "call_started_at")),
@@ -46,6 +53,7 @@ def build_call_summary(payload: dict[str, Any]) -> dict[str, Any]:
         "decline_reason": text(pick(data, "decline_reason", "reason")),
         "notes": text(pick(data, "notes", "summary")),
         "transcript": text(pick(data, "transcript")),
+        "duration_seconds": duration,
     }
 
 

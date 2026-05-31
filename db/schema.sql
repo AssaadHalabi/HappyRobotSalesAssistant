@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS calls (
   decline_reason TEXT,
   notes TEXT,
   transcript TEXT,
+  duration_seconds INTEGER,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

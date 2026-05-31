@@ -219,14 +219,16 @@ async def create_call_summary(request: Request) -> dict[str, Any]:
 
 
 @app.get("/api/metrics", dependencies=[Depends(require_happyrobot_api_key)])
-def metrics() -> dict[str, Any]:
-    data = get_metrics()
+def metrics(days: int | None = None) -> dict[str, Any]:
+    data = get_metrics(days=days)
     data["generated_at"] = datetime.now(timezone.utc).isoformat()
+    data["filter_days"] = days
     return data
 
 
 @app.get("/dashboard", response_class=HTMLResponse, dependencies=[Depends(require_happyrobot_api_key)])
-def dashboard() -> HTMLResponse:
-    data = get_metrics()
+def dashboard(days: int | None = None) -> HTMLResponse:
+    data = get_metrics(days=days)
     data["generated_at"] = datetime.now(timezone.utc).isoformat()
+    data["filter_days"] = days
     return HTMLResponse(render_dashboard(data))
