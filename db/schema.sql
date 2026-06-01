@@ -71,3 +71,5 @@ CREATE INDEX IF NOT EXISTS idx_call_events_call_id ON call_events (call_id);
 CREATE INDEX IF NOT EXISTS idx_offer_evaluations_call_id ON offer_evaluations (call_id);
 CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys (prefix);
 CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys (active);
+
+ALTER TABLE calls ADD COLUMN IF NOT EXISTS duration_seconds INTEGER;
