@@ -56,12 +56,6 @@ def build_call_summary(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def build_call_event(payload: dict[str, Any]) -> dict[str, str]:
-    return {
-        "call_id": text(pick(payload, "call_id", "conversation_id", "session_id")) or str(uuid4()),
-        "event_type": text(pick(payload, "event_type", "type")) or "event",
-    }
-
 
 def derive_outcome(data: dict[str, Any]) -> str | None:
     explicit = normalize_tag(pick(data, "call_outcome", "outcome", "booking_outcome"))

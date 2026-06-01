@@ -7,7 +7,7 @@ Before Railway deploy:
 - Generate `ADMIN_BOOTSTRAP_TOKEN`.
 - Generate `API_KEY_PEPPER`.
 - Add both to Railway variables.
-- Add `DATABASE_URL` from Supabase's transaction pooler.
+- Add `DATABASE_URL=${{Postgres.DATABASE_URL}}` (Railway resolves this to the private internal connection string).
 
 After Railway deploy:
 
@@ -15,7 +15,7 @@ After Railway deploy:
 - Use that admin API key to create the generated HappyRobot API key.
 - Put the HappyRobot API key into HappyRobot tool/webhook headers.
 
-The first generated token is created after hosting because the application needs the deployed service and Supabase database to store the hashed key.
+The first generated token is created after hosting because the application needs the deployed service and Railway Postgres database to store the hashed key.
 
 ## 1. Generate Railway Secrets
 
@@ -65,13 +65,16 @@ git remote set-url origin https://github.com/YOUR-USER/YOUR-REPO.git
 git push -u origin main
 ```
 
-## 4. Create Railway Service
+## 4. Create Railway Project
 
 1. Open Railway.
 2. Create a new project.
-3. Select `Deploy from GitHub repo`.
-4. Choose this repository.
-5. Railway should detect the root `Dockerfile`.
+3. Add a **Postgres** plugin (right-click canvas → Database → PostgreSQL).
+4. Add a new service → **Deploy from GitHub repo**.
+5. Choose this repository.
+6. Railway detects the root `Dockerfile`.
+
+The app connects to Postgres over Railway's private network (`postgres.railway.internal`) — no public exposure.
 
 Railway provides a `PORT` variable at runtime. The Dockerfile starts Uvicorn with:
 
@@ -86,7 +89,7 @@ Set these on the Railway service:
 ```text
 ADMIN_BOOTSTRAP_TOKEN=...
 API_KEY_PEPPER=...
-DATABASE_URL=postgresql://USER:PASSWORD@aws-0-REGION.pooler.supabase.com:6543/postgres?sslmode=require
+DATABASE_URL=${{Postgres.DATABASE_URL}}
 MAX_RATE_ABOVE_LOADBOARD_PCT=8
 PG_POOL_MIN=1
 PG_POOL_MAX=5
@@ -94,7 +97,7 @@ ALLOWED_ORIGINS=*
 ENVIRONMENT=production
 ```
 
-Use Supabase's transaction pooler URL for `DATABASE_URL`.
+`${{Postgres.DATABASE_URL}}` is Railway's reference variable that resolves to the private internal Postgres URL.
 
 ## 6. Deploy And Check Health
 
@@ -111,27 +114,6 @@ Expected:
 ```
 
 ## 7. Bootstrap First Admin API Key
-
-If the tables were not created during startup, force the schema initialization first:
-
-```bash
-curl -X POST https://YOUR-RAILWAY-DOMAIN/api/admin/database/init \
-  -H "x-bootstrap-token: YOUR_ADMIN_BOOTSTRAP_TOKEN"
-```
-
-Expected response:
-
-```json
-{
-  "schema_ready": true,
-  "tables": {
-    "calls": true,
-    "call_events": true,
-    "offer_evaluations": true,
-    "api_keys": true
-  }
-}
-```
 
 Run this once:
 
@@ -174,14 +156,13 @@ Endpoints:
 
 ```text
 POST https://YOUR-RAILWAY-DOMAIN/api/offers/evaluate
-POST https://YOUR-RAILWAY-DOMAIN/api/calls/events
 POST https://YOUR-RAILWAY-DOMAIN/api/calls/summary
 ```
 
-Dashboard:
+Dashboard (public):
 
 ```text
-https://YOUR-RAILWAY-DOMAIN/dashboard?api_key=GENERATED_HAPPYROBOT_API_KEY
+https://YOUR-RAILWAY-DOMAIN/dashboard
 ```
 
 ## 10. Smoke Test Offer Evaluation
@@ -190,7 +171,7 @@ https://YOUR-RAILWAY-DOMAIN/dashboard?api_key=GENERATED_HAPPYROBOT_API_KEY
 curl -X POST https://YOUR-RAILWAY-DOMAIN/api/offers/evaluate \
   -H "x-api-key: GENERATED_HAPPYROBOT_API_KEY" \
   -H "content-type: application/json" \
-  -d '{"call_id":"smoke","load_id":"TEST","loadboard_rate":2500,"offer_rate":2700,"negotiation_round":1}'
+  -d '{"reference_number":"TEST","loadboard_rate":2500,"offer_rate":2700,"negotiation_round":1}'
 ```
 
 Expected decision:

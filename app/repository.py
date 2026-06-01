@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from app.database import execute, fetch_all, fetch_value
@@ -30,15 +29,6 @@ def store_offer_evaluation(result: dict[str, Any]) -> None:
         ),
     )
 
-
-def store_call_event(payload: dict[str, Any], call_id: str, event_type: str) -> None:
-    execute(
-        """
-        INSERT INTO call_events (call_id, event_type, payload, created_at)
-        VALUES (%s, %s, %s::jsonb, now())
-        """,
-        (call_id, event_type, json.dumps(payload)),
-    )
 
 
 def upsert_call_summary(record: dict[str, Any]) -> None:

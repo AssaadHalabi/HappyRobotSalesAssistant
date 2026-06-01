@@ -50,10 +50,10 @@ When a carrier calls in looking for a load:
 ┌─────────────────────────────────────────────────────────────┐
 │              Dashboard API (Railway + PostgreSQL)             │
 │                                                              │
-│  POST /api/offers/evaluate    — real-time negotiation policy │
-│  POST /api/calls/summary      — post-call data ingestion     │
-│  GET  /dashboard              — live operational dashboard    │
-│  GET  /api/metrics            — JSON metrics endpoint         │
+│  POST /api/offers/evaluate  — real-time negotiation policy   │
+│  POST /api/calls/summary   — post-call data ingestion        │
+│  GET  /dashboard           — live operational dashboard       │
+│  GET  /api/metrics         — JSON metrics endpoint            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -163,6 +163,7 @@ Every call is also tagged with the carrier's emotional tone:
 | Database | Railway PostgreSQL (internal networking) |
 | Container | Docker (python:3.12-slim) |
 | Hosting | Railway (auto-deploy from GitHub) |
+| Networking | Private internal connection (postgres.railway.internal) |
 | Schema management | Auto-migration on startup |
 
 ### Access Points

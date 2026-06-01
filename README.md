@@ -10,26 +10,23 @@ HappyRobot owns the AI layer:
 - FMCSA verification tool invocation
 - Load lookup tool invocation
 - In-call natural language
-- AI Extract
-- AI Classify
-- Sentiment classification
+- AI Extract (13 fields)
+- AI Classify (outcome + sentiment)
 
 This FastAPI service owns deterministic external systems:
 
-- Counter-offer evaluation
-- In-call event persistence
+- Counter-offer evaluation (pricing policy)
 - Post-call summary persistence
 - Custom metrics API
-- Custom dashboard
-- Railway deployment
-- Generated, hashed, revocable API keys
+- Custom dashboard (public)
+- Railway deployment with private Postgres
 
 ## Stack
 
-- FastAPI
-- Uvicorn
-- Supabase Postgres transaction pooler
-- Railway Docker deployment
+- FastAPI + Uvicorn
+- Railway PostgreSQL (private internal network)
+- Docker (python:3.12-slim)
+- Railway auto-deploy from GitHub
 
 ## Routes
 
@@ -37,17 +34,16 @@ Business routes require a generated DB-backed `x-api-key` with the `happyrobot` 
 
 ```text
 GET    /health
+GET    /dashboard              (public — no auth)
+GET    /api/metrics
+POST   /api/offers/evaluate
+POST   /api/calls/summary
 POST   /api/admin/bootstrap-key
 POST   /api/admin/database/init
 GET    /api/admin/database/status
 POST   /api/admin/api-keys
 GET    /api/admin/api-keys
 DELETE /api/admin/api-keys/{key_id}
-POST   /api/offers/evaluate
-POST   /api/calls/events
-POST   /api/calls/summary
-GET    /api/metrics
-GET    /dashboard?api_key=GENERATED_API_KEY
 ```
 
 ## API Key Flow
@@ -77,7 +73,7 @@ curl -X POST https://YOUR-RAILWAY-DOMAIN/api/admin/api-keys \
   -d '{"name":"happyrobot-production","scopes":["happyrobot"]}'
 ```
 
-Raw keys are returned once. Supabase stores only a lookup prefix and HMAC hash.
+Raw keys are returned once. The database stores only a lookup prefix and HMAC hash.
 
 ## Evaluate Offer
 
@@ -87,9 +83,7 @@ POST /api/offers/evaluate
 
 ```json
 {
-  "call_id": "call-123",
-  "load_id": "ATL-DAL-1042",
-  "reference_number": "ATL10420",
+  "reference_number": "REF09460",
   "loadboard_rate": 2500,
   "offer_rate": 2700,
   "negotiation_round": 1
@@ -120,7 +114,7 @@ Open:
 
 ```text
 http://127.0.0.1:8000/docs
-http://127.0.0.1:8000/dashboard?api_key=GENERATED_API_KEY
+http://127.0.0.1:8000/dashboard
 ```
 
 ## Railway Deploy
@@ -128,9 +122,9 @@ http://127.0.0.1:8000/dashboard?api_key=GENERATED_API_KEY
 Set Railway variables:
 
 ```text
-ADMIN_BOOTSTRAP_TOKEN=YOUR_LONG_RANDOM_ONE_TIME_BOOTSTRAP_TOKEN
-API_KEY_PEPPER=YOUR_LONG_RANDOM_SERVER_SIDE_PEPPER
-DATABASE_URL=YOUR_SUPABASE_TRANSACTION_POOLER_URL
+ADMIN_BOOTSTRAP_TOKEN=...
+API_KEY_PEPPER=...
+DATABASE_URL=${{Postgres.DATABASE_URL}}
 MAX_RATE_ABOVE_LOADBOARD_PCT=8
 PG_POOL_MIN=1
 PG_POOL_MAX=5
@@ -138,15 +132,17 @@ ALLOWED_ORIGINS=*
 ENVIRONMENT=production
 ```
 
+`DATABASE_URL` resolves to Railway's private internal Postgres URL (`postgres.railway.internal`).
+
 Generate the Railway secrets locally:
 
 ```powershell
 & '.venv\Scripts\python.exe' scripts\generate_secrets.py
 ```
 
-After Railway deploys, call `/api/admin/bootstrap-key` once to create the first generated admin API key. Then use that admin key to create the HappyRobot API key.
+After Railway deploys, call `/api/admin/bootstrap-key` once to create the first admin API key. Then use that admin key to create the HappyRobot API key.
 
-Railway will build from the root `Dockerfile`. The container starts with:
+Railway builds from the root `Dockerfile`. The container starts with:
 
 ```text
 uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
@@ -157,8 +153,5 @@ uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
 - [Railway deployment](docs/railway-deployment.md)
 - [GitHub and Railway checklist](docs/github-railway-checklist.md)
 - [HappyRobot configuration notes](docs/happyrobot-configuration.md)
-- [AI Extract schema](docs/extraction-schema.json)
-- [Webhook payload example](docs/webhook-payload-example.json)
-- [Client email draft](docs/client-email-draft.md)
 - [Acme Logistics build description](docs/acme-logistics-build-description.md)
-- [Video walkthrough script](docs/video-walkthrough-script.md)
+- [Client email draft](docs/client-email-draft.md)

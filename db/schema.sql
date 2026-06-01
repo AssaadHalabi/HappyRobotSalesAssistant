@@ -24,14 +24,6 @@ CREATE TABLE IF NOT EXISTS calls (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS call_events (
-  id BIGSERIAL PRIMARY KEY,
-  call_id TEXT NOT NULL,
-  event_type TEXT NOT NULL,
-  payload JSONB NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
 CREATE TABLE IF NOT EXISTS offer_evaluations (
   id BIGSERIAL PRIMARY KEY,
   call_id TEXT,
@@ -62,7 +54,6 @@ CREATE TABLE IF NOT EXISTS api_keys (
 CREATE INDEX IF NOT EXISTS idx_calls_called_at ON calls (called_at DESC);
 CREATE INDEX IF NOT EXISTS idx_calls_outcome ON calls (call_outcome);
 CREATE INDEX IF NOT EXISTS idx_calls_sentiment ON calls (carrier_sentiment);
-CREATE INDEX IF NOT EXISTS idx_call_events_call_id ON call_events (call_id);
 CREATE INDEX IF NOT EXISTS idx_offer_evaluations_call_id ON offer_evaluations (call_id);
 CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys (prefix);
 CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys (active);

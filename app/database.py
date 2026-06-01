@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 _pool: ConnectionPool | None = None
 _schema_ready = False
-EXPECTED_TABLES = ("calls", "call_events", "offer_evaluations", "api_keys")
+EXPECTED_TABLES = ("calls", "offer_evaluations", "api_keys")
 
 MAX_CONNECT_RETRIES = 5
 RETRY_BASE_DELAY_S = 2.0

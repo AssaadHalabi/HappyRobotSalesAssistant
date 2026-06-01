@@ -4,10 +4,10 @@ This service deploys to Railway as a Dockerized FastAPI application.
 
 ## Architecture
 
-- Railway web service + Railway Postgres plugin (same project)
+- Railway web service + Railway Postgres plugin (same project, private networking)
 - Root `Dockerfile`
 - FastAPI + Uvicorn
-- PostgreSQL connection via Railway service reference variable
+- PostgreSQL connection via Railway internal network (`postgres.railway.internal`)
 - DB-backed generated API keys for business and admin access
 - HappyRobot remains responsible for voice AI, extraction, and classification
 
@@ -30,10 +30,10 @@ Generate the two secrets with:
 python scripts/generate_secrets.py
 ```
 
-`DATABASE_URL` uses Railway's reference variable syntax to automatically resolve
-to the internal Postgres connection string. The app handles `postgres://` →
-`postgresql://` conversion and URL-encodes special characters in the password
-automatically.
+`DATABASE_URL` uses Railway's reference variable syntax which resolves to the
+private internal Postgres connection string (`postgres://postgres:PASSWORD@postgres.railway.internal:5432/railway`).
+The app handles `postgres://` → `postgresql://` conversion and URL-encodes
+special characters in the password automatically.
 
 The app disables psycopg prepared statements (`prepare_threshold=None`) for
 pooler compatibility.
@@ -66,9 +66,12 @@ The app creates the required tables on startup when `DATABASE_URL` is present
 (with retry logic for Railway cold-start race conditions):
 
 - `calls`
-- `call_events`
 - `offer_evaluations`
 - `api_keys`
+
+The connection uses Railway's private network (`postgres.railway.internal`),
+which means zero-latency communication between the app and database with no
+public exposure of the database port.
 
 You can also run [db/schema.sql](../db/schema.sql) manually against the Railway
 Postgres instance via `railway connect postgres`.
@@ -129,7 +132,6 @@ Use your Railway domain in HappyRobot:
 
 ```text
 POST https://YOUR-RAILWAY-DOMAIN/api/offers/evaluate
-POST https://YOUR-RAILWAY-DOMAIN/api/calls/events
 POST https://YOUR-RAILWAY-DOMAIN/api/calls/summary
 ```
 
@@ -140,8 +142,8 @@ x-api-key: GENERATED_HAPPYROBOT_API_KEY
 content-type: application/json
 ```
 
-Dashboard:
+Dashboard (public, no key required):
 
 ```text
-https://YOUR-RAILWAY-DOMAIN/dashboard?api_key=GENERATED_HAPPYROBOT_API_KEY
+https://YOUR-RAILWAY-DOMAIN/dashboard
 ```

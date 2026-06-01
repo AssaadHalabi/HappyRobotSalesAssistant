@@ -12,12 +12,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.api_keys import create_api_key, has_active_admin_key, list_api_keys, revoke_api_key, validate_api_key
-from app.calls import build_call_event, build_call_summary
+from app.calls import build_call_summary
 from app.config import get_settings
 from app.dashboard import render_dashboard
 from app.database import close_pool, database_status, ensure_schema
 from app.pricing import evaluate_offer_policy
-from app.repository import get_metrics, store_call_event, store_offer_evaluation, upsert_call_summary
+from app.repository import get_metrics, store_offer_evaluation, upsert_call_summary
 
 logging.basicConfig(
     level=logging.INFO,
@@ -195,13 +195,6 @@ async def evaluate_offer(request: Request) -> dict[str, Any]:
     store_offer_evaluation(result)
     return result
 
-
-@app.post("/api/calls/events", dependencies=[Depends(require_happyrobot_api_key)])
-async def create_call_event(request: Request) -> dict[str, Any]:
-    payload = await read_json_object(request)
-    event = build_call_event(payload)
-    store_call_event(payload, event["call_id"], event["event_type"])
-    return {"stored": True, **event}
 
 
 @app.post("/api/calls/summary", dependencies=[Depends(require_happyrobot_api_key)])

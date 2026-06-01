@@ -1,23 +1,27 @@
 # Email Draft To Prospect Client
 
-Subject: Inbound Carrier Sales Automation - Build Progress Ahead Of Demo
+Subject: Inbound Carrier Sales Automation — Ready for Demo
 
 Hi Carlos,
 
 I wanted to share a quick update ahead of our walkthrough.
 
-I have the inbound carrier sales workflow mapped around the web call trigger, with the agent collecting the carrier MC number, checking carrier information through the configured FMCSA integration, retrieving load details from the configured load API, and guiding the carrier through the booking conversation.
+The inbound carrier sales workflow is fully built and live. Carriers can call in through the web call trigger, the agent verifies their MC number with FMCSA, retrieves load details, pitches the load conversationally, and handles up to three rounds of rate negotiation — all automated.
 
-The remaining build work is focused on the pieces that matter most for evaluating the operating model: negotiation handling, post-call extraction, outcome and sentiment classification, and a custom dashboard outside of the HappyRobot analytics surface. I am adding an external service that evaluates carrier counter-offers, records call outcomes, and gives the brokerage team a view into booking rate, eligibility rate, rate exceptions, negotiation rounds, and caller sentiment.
+On the infrastructure side, I deployed a FastAPI service on Railway (with a private PostgreSQL database) that enforces configurable pricing policy in real time and powers a custom operational dashboard. The dashboard shows conversion funnel, booked revenue, negotiation savings, sentiment breakdown, and call-level detail — all refreshing live as calls come in.
 
-In the demo, I will show:
+In the demo, I will walk through:
 
-- A web-call inbound carrier conversation
+- A live inbound carrier call (web call trigger)
 - MC verification and load lookup
-- Counter-offer handling with up to three negotiation rounds
-- A mocked successful transfer when the rate is agreed
-- Post-call extraction and classification
-- A custom dashboard with call and offer metrics
+- Counter-offer handling with the external pricing policy
+- Post-call extraction and classification (outcome + sentiment)
+- The live dashboard with real call data
+
+The dashboard is already accessible at:
+https://happyrobotsalesassistant-production.up.railway.app/dashboard
+
+Looking forward to the conversation.
 
 Best,
 Assaad
