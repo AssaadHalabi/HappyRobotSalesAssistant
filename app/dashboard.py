@@ -68,8 +68,10 @@ def funnel_section(metrics: dict[str, Any]) -> str:
 def render_dashboard(metrics: dict[str, Any]) -> str:
     recent_rows = []
     for row in metrics["recent_calls"]:
+        has_data = any(row.get(k) for k in ("carrier_name", "mc_number", "reference_number", "origin"))
+        row_cls = "" if has_data else ' class="dim-row"'
         recent_rows.append(
-            f'<tr>'
+            f'<tr{row_cls}>'
             f'<td>{escape(str(row.get("carrier_name") or "-"))}</td>'
             f'<td>{escape(str(row.get("mc_number") or "-"))}</td>'
             f'<td>{escape(str(row.get("reference_number") or "-"))}</td>'
@@ -154,6 +156,7 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
     th {{ color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:0.3px; }}
     .pill {{ display:inline-block; border:1px solid var(--line); border-radius:999px; padding:2px 8px; background:#f8fafc; white-space:nowrap; font-size:12px; }}
     .empty {{ color:var(--muted); }}
+    .dim-row {{ opacity:0.45; }}
     footer {{ color:var(--muted); font-size:12px; margin-top:18px; display:flex; justify-content:space-between; }}
     @media (max-width:980px) {{
       .kpis {{ grid-template-columns:repeat(2,1fr); }}
@@ -172,7 +175,7 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
     <nav class="filter-bar">
       <a class="{btn_cls('7')}" href="?days=7">7 days</a>
       <a class="{btn_cls('30')}" href="?days=30">30 days</a>
-      <a class="{btn_cls('all')}" href="?">All time</a>
+      <a class="{btn_cls('all')}" href="/dashboard">All time</a>
     </nav>
   </header>
   <main>
@@ -226,8 +229,8 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
       </table>
     </section>
     <footer>
-      <span>Auto-refreshes every 30s. Protected with API key.</span>
-      <span>{escape(str(metrics.get("generated_at", "")))}</span>
+      <span>Auto-refreshes every 30s.</span>
+      <span id="genTime"></span>
     </footer>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
@@ -254,6 +257,11 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
       }});
     }} else {{
       document.getElementById('trendChart').parentElement.innerHTML += '<p class="empty">No trend data yet.</p>';
+    }}
+    const genAt = "{metrics.get('generated_at', '')}";
+    if (genAt) {{
+      const d = new Date(genAt);
+      document.getElementById('genTime').textContent = 'Updated ' + d.toLocaleString();
     }}
     setTimeout(() => location.reload(), 30000);
   </script>

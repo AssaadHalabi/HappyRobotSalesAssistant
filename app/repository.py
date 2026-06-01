@@ -195,10 +195,11 @@ def get_metrics(days: int | None = None) -> dict[str, Any]:
         ORDER BY count DESC, name ASC
         """
     )
+    offer_tf = "" if days is None else f"AND created_at >= now() - interval '{int(days)} days'"
     offer_decisions = fetch_all(
         f"""
         SELECT decision AS name, COUNT(*)::int AS count
-        FROM offer_evaluations WHERE 1=1 {tf.replace('created_at', 'offer_evaluations.created_at')}
+        FROM offer_evaluations WHERE 1=1 {offer_tf}
         GROUP BY decision
         ORDER BY count DESC, name ASC
         """
