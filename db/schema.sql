@@ -1,7 +1,6 @@
 CREATE TABLE IF NOT EXISTS calls (
   call_id TEXT PRIMARY KEY,
-  started_at TEXT,
-  ended_at TEXT,
+  called_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   mc_number TEXT,
   carrier_name TEXT,
   carrier_eligibility TEXT,
@@ -64,7 +63,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
   last_used_at TIMESTAMPTZ
 );
 
-CREATE INDEX IF NOT EXISTS idx_calls_updated_at ON calls (updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_calls_called_at ON calls (called_at DESC);
 CREATE INDEX IF NOT EXISTS idx_calls_outcome ON calls (call_outcome);
 CREATE INDEX IF NOT EXISTS idx_calls_sentiment ON calls (carrier_sentiment);
 CREATE INDEX IF NOT EXISTS idx_call_events_call_id ON call_events (call_id);
@@ -73,3 +72,6 @@ CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys (prefix);
 CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys (active);
 
 ALTER TABLE calls ADD COLUMN IF NOT EXISTS duration_seconds INTEGER;
+ALTER TABLE calls ADD COLUMN IF NOT EXISTS called_at TIMESTAMPTZ;
+ALTER TABLE calls DROP COLUMN IF EXISTS started_at;
+ALTER TABLE calls DROP COLUMN IF EXISTS ended_at;

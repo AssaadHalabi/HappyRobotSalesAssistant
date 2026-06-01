@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
@@ -28,10 +29,11 @@ def build_call_summary(payload: dict[str, Any]) -> dict[str, Any]:
         except (TypeError, ValueError):
             duration = None
 
+    now = datetime.now(timezone.utc).isoformat()
+
     return {
         "call_id": text(pick(data, "call_id", "conversation_id", "session_id")) or str(uuid4()),
-        "started_at": text(pick(data, "started_at", "call_started_at")),
-        "ended_at": text(pick(data, "ended_at", "call_ended_at")),
+        "called_at": now,
         "mc_number": text(pick(data, "mc_number", "mc")),
         "carrier_name": text(pick(data, "carrier_name", "company_name")),
         "carrier_eligibility": normalize_tag(pick(data, "carrier_eligibility", "eligibility_status")),

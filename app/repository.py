@@ -46,7 +46,7 @@ def upsert_call_summary(record: dict[str, Any]) -> None:
     execute(
         """
         INSERT INTO calls (
-            call_id, started_at, ended_at, mc_number, carrier_name,
+            call_id, called_at, mc_number, carrier_name,
             carrier_eligibility, eligibility_reason, load_id, reference_number,
             origin, destination, pickup_datetime, delivery_datetime, equipment_type,
             loadboard_rate, offer_rate, final_rate, negotiation_rounds,
@@ -54,7 +54,7 @@ def upsert_call_summary(record: dict[str, Any]) -> None:
             notes, transcript, duration_seconds, created_at, updated_at
         )
         VALUES (
-            %s, %s, %s, %s, %s,
+            %s, %s, %s, %s,
             %s, %s, %s, %s,
             %s, %s, %s, %s, %s,
             %s, %s, %s, %s,
@@ -62,8 +62,7 @@ def upsert_call_summary(record: dict[str, Any]) -> None:
             %s, %s, %s, now(), now()
         )
         ON CONFLICT (call_id) DO UPDATE SET
-            started_at = EXCLUDED.started_at,
-            ended_at = EXCLUDED.ended_at,
+            called_at = EXCLUDED.called_at,
             mc_number = EXCLUDED.mc_number,
             carrier_name = EXCLUDED.carrier_name,
             carrier_eligibility = EXCLUDED.carrier_eligibility,
@@ -90,8 +89,7 @@ def upsert_call_summary(record: dict[str, Any]) -> None:
         """,
         tuple(record[key] for key in (
             "call_id",
-            "started_at",
-            "ended_at",
+            "called_at",
             "mc_number",
             "carrier_name",
             "carrier_eligibility",
@@ -121,7 +119,7 @@ def upsert_call_summary(record: dict[str, Any]) -> None:
 def _time_filter(days: int | None) -> str:
     if days is None:
         return ""
-    return f"AND created_at >= now() - interval '{int(days)} days'"
+    return f"AND called_at >= now() - interval '{int(days)} days'"
 
 
 def get_metrics(days: int | None = None) -> dict[str, Any]:
@@ -227,11 +225,11 @@ def get_metrics(days: int | None = None) -> dict[str, Any]:
     # Daily call volume (last 14 days always, regardless of filter)
     calls_per_day = fetch_all(
         """
-        SELECT created_at::date::text AS day, COUNT(*)::int AS count
+        SELECT called_at::date::text AS day, COUNT(*)::int AS count
         FROM calls
-        WHERE created_at >= now() - interval '14 days'
-        GROUP BY created_at::date
-        ORDER BY created_at::date ASC
+        WHERE called_at >= now() - interval '14 days'
+        GROUP BY called_at::date
+        ORDER BY called_at::date ASC
         """
     )
 
@@ -239,9 +237,9 @@ def get_metrics(days: int | None = None) -> dict[str, Any]:
         f"""
         SELECT call_id, carrier_name, mc_number, load_id, origin, destination,
                loadboard_rate, final_rate, negotiation_rounds, call_outcome,
-               carrier_sentiment, duration_seconds, updated_at
+               carrier_sentiment, duration_seconds, called_at
         FROM calls WHERE 1=1 {tf}
-        ORDER BY updated_at DESC
+        ORDER BY called_at DESC
         LIMIT 10
         """
     )
