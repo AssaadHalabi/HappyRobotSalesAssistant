@@ -236,6 +236,19 @@ def get_metrics(days: int | None = None) -> dict[str, Any]:
         """
     ) or 0)
 
+    negotiation_history = fetch_all(
+        f"""
+        SELECT oe.call_id, c.carrier_name, oe.reference_number,
+               oe.negotiation_round, oe.offer_rate, oe.counter_rate,
+               oe.accepted_rate, oe.decision, oe.loadboard_rate
+        FROM offer_evaluations oe
+        LEFT JOIN calls c ON c.call_id = oe.call_id
+        WHERE 1=1 {offer_tf}
+        ORDER BY oe.created_at DESC, oe.negotiation_round ASC
+        LIMIT 50
+        """
+    )
+
     return {
         "total_calls": total_calls,
         "booked_calls": booked_calls,
@@ -256,4 +269,5 @@ def get_metrics(days: int | None = None) -> dict[str, Any]:
         "decline_reasons": decline_reasons,
         "calls_per_day": calls_per_day,
         "recent_calls": recent_calls,
+        "negotiation_history": negotiation_history,
     }

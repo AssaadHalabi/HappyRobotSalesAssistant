@@ -91,6 +91,58 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
     avg_dur = duration_fmt(metrics["avg_duration"])
     offer_total = sum(int(item.get("count") or 0) for item in metrics["offer_decisions"])
 
+    # Group negotiation history by call_id
+    negotiations_by_call: dict[str, list[dict[str, Any]]] = {}
+    for ev in metrics.get("negotiation_history", []):
+        cid = ev.get("call_id") or "unknown"
+        negotiations_by_call.setdefault(cid, []).append(ev)
+
+    negotiation_cards = []
+    for call_id, rounds in list(negotiations_by_call.items())[:8]:
+        first = rounds[0]
+        carrier = escape(str(first.get("carrier_name") or "Unknown carrier"))
+        ref = escape(str(first.get("reference_number") or "-"))
+        listed = money(first.get("loadboard_rate"))
+
+        steps_html = []
+        for r in sorted(rounds, key=lambda x: int(x.get("negotiation_round") or 0)):
+            rnd = r.get("negotiation_round", "?")
+            offer = money(r.get("offer_rate"))
+            decision = escape(str(r.get("decision") or "-"))
+            counter = money(r.get("counter_rate"))
+            accepted = money(r.get("accepted_rate"))
+
+            decision_color = {
+                "accept": "var(--green)",
+                "counter": "var(--blue)",
+                "reject": "#dc2626",
+            }.get(decision.lower(), "var(--muted)")
+
+            if decision.lower() == "accept":
+                result_text = f"Accepted at {accepted}"
+            elif decision.lower() == "counter":
+                result_text = f"Countered {counter}"
+            else:
+                result_text = "Rejected"
+
+            steps_html.append(
+                f'<div class="neg-step">'
+                f'<div class="neg-round">R{rnd}</div>'
+                f'<div class="neg-detail">'
+                f'<span>Carrier offered {offer}</span>'
+                f'<span class="neg-decision" style="color:{decision_color}">&rarr; {result_text}</span>'
+                f'</div></div>'
+            )
+
+        negotiation_cards.append(
+            f'<div class="neg-card">'
+            f'<div class="neg-header"><strong>{carrier}</strong><span class="neg-meta">Ref {ref} &middot; Listed {listed}</span></div>'
+            f'{"".join(steps_html)}'
+            f'</div>'
+        )
+
+    negotiation_section = "\n".join(negotiation_cards) if negotiation_cards else '<p class="empty">No negotiations recorded yet.</p>'
+
     chart_labels = json.dumps([d["day"] for d in metrics["calls_per_day"]])
     chart_data = json.dumps([d["count"] for d in metrics["calls_per_day"]])
 
@@ -158,6 +210,14 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
     .pill {{ display:inline-block; border:1px solid var(--line); border-radius:999px; padding:2px 8px; background:#f8fafc; white-space:nowrap; font-size:12px; }}
     .empty {{ color:var(--muted); }}
     .dim-row {{ opacity:0.45; }}
+    .neg-card {{ background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin-bottom:12px; }}
+    .neg-header {{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px; }}
+    .neg-header strong {{ font-size:14px; }}
+    .neg-meta {{ color:var(--muted); font-size:12px; }}
+    .neg-step {{ display:flex; align-items:center; gap:10px; padding:6px 0; border-top:1px solid var(--line); }}
+    .neg-round {{ width:30px; height:30px; border-radius:50%; background:var(--blue-light); color:var(--blue); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }}
+    .neg-detail {{ display:flex; gap:8px; font-size:13px; flex-wrap:wrap; }}
+    .neg-decision {{ font-weight:600; }}
     footer {{ color:var(--muted); font-size:12px; margin-top:18px; display:flex; justify-content:space-between; }}
     @media (max-width:980px) {{
       .kpis {{ grid-template-columns:repeat(2,1fr); }}
@@ -216,6 +276,12 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
       <article class="panel"><h2>Offer Decisions (API)</h2>{bar_list(metrics["offer_decisions"], offer_total, "var(--purple)")}</article>
     </section>
     '''}
+
+    <!-- Negotiation History -->
+    <section class="panel">
+      <h2>Negotiation History</h2>
+      {negotiation_section}
+    </section>
 
     <!-- Recent Calls -->
     <section class="panel">
