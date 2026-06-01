@@ -155,7 +155,6 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
     .pill {{ display:inline-block; border:1px solid var(--line); border-radius:999px; padding:2px 8px; background:#f8fafc; white-space:nowrap; font-size:12px; }}
     .empty {{ color:var(--muted); }}
     footer {{ color:var(--muted); font-size:12px; margin-top:18px; display:flex; justify-content:space-between; }}
-    #trendChart {{ width:100%; height:180px; }}
     @media (max-width:980px) {{
       .kpis {{ grid-template-columns:repeat(2,1fr); }}
       .grid,.grid-3 {{ grid-template-columns:1fr; }}
@@ -196,7 +195,7 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
       </article>
       <article class="panel">
         <h2>Call Volume (14 days)</h2>
-        <canvas id="trendChart"></canvas>
+        <div style="position:relative;height:180px"><canvas id="trendChart"></canvas></div>
       </article>
     </section>
 

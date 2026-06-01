@@ -112,9 +112,8 @@ async def read_json_object(request: Request) -> dict[str, Any]:
 
 
 @app.get("/")
-def root(api_key: str | None = None) -> RedirectResponse:
-    suffix = f"?api_key={api_key}" if api_key else ""
-    return RedirectResponse(url=f"/dashboard{suffix}", status_code=302)
+def root() -> RedirectResponse:
+    return RedirectResponse(url="/dashboard", status_code=302)
 
 
 @app.get("/health")
@@ -226,7 +225,7 @@ def metrics(days: int | None = None) -> dict[str, Any]:
     return data
 
 
-@app.get("/dashboard", response_class=HTMLResponse, dependencies=[Depends(require_happyrobot_api_key)])
+@app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(days: int | None = None) -> HTMLResponse:
     data = get_metrics(days=days)
     data["generated_at"] = datetime.now(timezone.utc).isoformat()
