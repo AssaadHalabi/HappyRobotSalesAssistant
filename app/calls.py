@@ -41,8 +41,6 @@ def build_call_summary(payload: dict[str, Any]) -> dict[str, Any]:
         "reference_number": text(pick(data, "reference_number", "load_reference", "load_id")),
         "origin": text(pick(data, "origin")),
         "destination": text(pick(data, "destination")),
-        "pickup_datetime": text(pick(data, "pickup_datetime", "pickup_time")),
-        "delivery_datetime": text(pick(data, "delivery_datetime", "delivery_time")),
         "equipment_type": text(pick(data, "equipment_type", "trailer_type")),
         "loadboard_rate": number_value(pick(data, "loadboard_rate", "listed_rate"), "loadboard_rate"),
         "offer_rate": number_value(pick(data, "offer_rate", "carrier_offer", "initial_offer_rate"), "offer_rate"),

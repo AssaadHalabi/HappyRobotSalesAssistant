@@ -8,8 +8,6 @@ CREATE TABLE IF NOT EXISTS calls (
   reference_number TEXT,
   origin TEXT,
   destination TEXT,
-  pickup_datetime TEXT,
-  delivery_datetime TEXT,
   equipment_type TEXT,
   loadboard_rate NUMERIC,
   offer_rate NUMERIC,
@@ -70,4 +68,6 @@ CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys (prefix);
 CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys (active);
 
 ALTER TABLE calls DROP COLUMN IF EXISTS load_id;
+ALTER TABLE calls DROP COLUMN IF EXISTS pickup_datetime;
+ALTER TABLE calls DROP COLUMN IF EXISTS delivery_datetime;
 ALTER TABLE offer_evaluations DROP COLUMN IF EXISTS load_id;

@@ -47,7 +47,7 @@ def upsert_call_summary(record: dict[str, Any]) -> None:
         INSERT INTO calls (
             call_id, called_at, mc_number, carrier_name,
             carrier_eligibility, eligibility_reason, reference_number,
-            origin, destination, pickup_datetime, delivery_datetime, equipment_type,
+            origin, destination, equipment_type,
             loadboard_rate, offer_rate, final_rate, negotiation_rounds,
             transfer_status, call_outcome, carrier_sentiment, decline_reason,
             notes, transcript, duration_seconds, created_at, updated_at
@@ -55,7 +55,7 @@ def upsert_call_summary(record: dict[str, Any]) -> None:
         VALUES (
             %s, %s, %s, %s,
             %s, %s, %s,
-            %s, %s, %s, %s, %s,
+            %s, %s, %s,
             %s, %s, %s, %s,
             %s, %s, %s, %s,
             %s, %s, %s, now(), now()
@@ -69,8 +69,6 @@ def upsert_call_summary(record: dict[str, Any]) -> None:
             reference_number = EXCLUDED.reference_number,
             origin = EXCLUDED.origin,
             destination = EXCLUDED.destination,
-            pickup_datetime = EXCLUDED.pickup_datetime,
-            delivery_datetime = EXCLUDED.delivery_datetime,
             equipment_type = EXCLUDED.equipment_type,
             loadboard_rate = EXCLUDED.loadboard_rate,
             offer_rate = EXCLUDED.offer_rate,
@@ -95,8 +93,6 @@ def upsert_call_summary(record: dict[str, Any]) -> None:
             "reference_number",
             "origin",
             "destination",
-            "pickup_datetime",
-            "delivery_datetime",
             "equipment_type",
             "loadboard_rate",
             "offer_rate",
