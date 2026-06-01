@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS calls (
   carrier_name TEXT,
   carrier_eligibility TEXT,
   eligibility_reason TEXT,
-  load_id TEXT,
   reference_number TEXT,
   origin TEXT,
   destination TEXT,
@@ -38,7 +37,6 @@ CREATE TABLE IF NOT EXISTS call_events (
 CREATE TABLE IF NOT EXISTS offer_evaluations (
   id BIGSERIAL PRIMARY KEY,
   call_id TEXT,
-  load_id TEXT,
   reference_number TEXT,
   loadboard_rate NUMERIC NOT NULL,
   offer_rate NUMERIC NOT NULL,
@@ -70,3 +68,6 @@ CREATE INDEX IF NOT EXISTS idx_call_events_call_id ON call_events (call_id);
 CREATE INDEX IF NOT EXISTS idx_offer_evaluations_call_id ON offer_evaluations (call_id);
 CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys (prefix);
 CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys (active);
+
+ALTER TABLE calls DROP COLUMN IF EXISTS load_id;
+ALTER TABLE offer_evaluations DROP COLUMN IF EXISTS load_id;

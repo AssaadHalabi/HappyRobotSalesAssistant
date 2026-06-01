@@ -10,15 +10,14 @@ def store_offer_evaluation(result: dict[str, Any]) -> None:
     execute(
         """
         INSERT INTO offer_evaluations (
-            call_id, load_id, reference_number, loadboard_rate, offer_rate,
+            call_id, reference_number, loadboard_rate, offer_rate,
             negotiation_round, decision, counter_rate, accepted_rate,
             walkaway_rate, reason, created_at
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
         """,
         (
             result["call_id"],
-            result["load_id"],
             result["reference_number"],
             result["loadboard_rate"],
             result["offer_rate"],
@@ -47,7 +46,7 @@ def upsert_call_summary(record: dict[str, Any]) -> None:
         """
         INSERT INTO calls (
             call_id, called_at, mc_number, carrier_name,
-            carrier_eligibility, eligibility_reason, load_id, reference_number,
+            carrier_eligibility, eligibility_reason, reference_number,
             origin, destination, pickup_datetime, delivery_datetime, equipment_type,
             loadboard_rate, offer_rate, final_rate, negotiation_rounds,
             transfer_status, call_outcome, carrier_sentiment, decline_reason,
@@ -55,7 +54,7 @@ def upsert_call_summary(record: dict[str, Any]) -> None:
         )
         VALUES (
             %s, %s, %s, %s,
-            %s, %s, %s, %s,
+            %s, %s, %s,
             %s, %s, %s, %s, %s,
             %s, %s, %s, %s,
             %s, %s, %s, %s,
@@ -67,7 +66,6 @@ def upsert_call_summary(record: dict[str, Any]) -> None:
             carrier_name = EXCLUDED.carrier_name,
             carrier_eligibility = EXCLUDED.carrier_eligibility,
             eligibility_reason = EXCLUDED.eligibility_reason,
-            load_id = EXCLUDED.load_id,
             reference_number = EXCLUDED.reference_number,
             origin = EXCLUDED.origin,
             destination = EXCLUDED.destination,
@@ -94,7 +92,6 @@ def upsert_call_summary(record: dict[str, Any]) -> None:
             "carrier_name",
             "carrier_eligibility",
             "eligibility_reason",
-            "load_id",
             "reference_number",
             "origin",
             "destination",
@@ -149,7 +146,7 @@ def get_metrics(days: int | None = None) -> dict[str, Any]:
     load_matched_calls = int(fetch_value(
         f"""
         SELECT COUNT(*) AS value FROM calls
-        WHERE load_id IS NOT NULL OR reference_number IS NOT NULL {tf}
+        WHERE reference_number IS NOT NULL {tf}
         """
     ) or 0)
 
@@ -235,7 +232,7 @@ def get_metrics(days: int | None = None) -> dict[str, Any]:
 
     recent_calls = fetch_all(
         f"""
-        SELECT call_id, carrier_name, mc_number, load_id, origin, destination,
+        SELECT call_id, carrier_name, mc_number, reference_number, origin, destination,
                loadboard_rate, final_rate, negotiation_rounds, call_outcome,
                carrier_sentiment, duration_seconds, called_at
         FROM calls WHERE 1=1 {tf}

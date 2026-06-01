@@ -72,7 +72,7 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
             f'<tr>'
             f'<td>{escape(str(row.get("carrier_name") or "-"))}</td>'
             f'<td>{escape(str(row.get("mc_number") or "-"))}</td>'
-            f'<td>{escape(str(row.get("load_id") or "-"))}</td>'
+            f'<td>{escape(str(row.get("reference_number") or "-"))}</td>'
             f'<td>{escape(str(row.get("origin") or "-"))} &rarr; {escape(str(row.get("destination") or "-"))}</td>'
             f'<td>{money(row.get("loadboard_rate"))}</td>'
             f'<td>{money(row.get("final_rate"))}</td>'

@@ -52,8 +52,7 @@ def evaluate_offer_policy(payload: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "call_id": text(pick(payload, "call_id", "conversation_id")),
-        "load_id": text(pick(payload, "load_id")),
-        "reference_number": text(pick(payload, "reference_number")),
+        "reference_number": text(pick(payload, "reference_number", "load_id")),
         "loadboard_rate": round(loadboard_rate, 2),
         "offer_rate": round(offer_rate, 2),
         "negotiation_round": negotiation_round,
