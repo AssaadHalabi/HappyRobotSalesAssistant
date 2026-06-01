@@ -65,83 +65,82 @@ def funnel_section(metrics: dict[str, Any]) -> str:
     return "\n".join(rows)
 
 
-def render_dashboard(metrics: dict[str, Any]) -> str:
-    recent_rows = []
-    for row in metrics["recent_calls"]:
-        has_data = any(row.get(k) for k in ("carrier_name", "mc_number", "reference_number", "origin"))
-        row_cls = "" if has_data else ' class="dim-row"'
-        recent_rows.append(
-            f'<tr{row_cls}>'
-            f'<td>{escape(str(row.get("carrier_name") or "-"))}</td>'
-            f'<td>{escape(str(row.get("mc_number") or "-"))}</td>'
-            f'<td>{escape(str(row.get("reference_number") or "-"))}</td>'
-            f'<td>{escape(str(row.get("origin") or "-"))} &rarr; {escape(str(row.get("destination") or "-"))}</td>'
-            f'<td>{money(row.get("loadboard_rate"))}</td>'
-            f'<td>{money(row.get("final_rate"))}</td>'
-            f'<td>{escape(str(row.get("negotiation_rounds") or "-"))}</td>'
-            f'<td><span class="pill">{title(row.get("call_outcome"))}</span></td>'
-            f'<td>{title(row.get("carrier_sentiment"))}</td>'
-            f'<td>{duration_fmt(row.get("duration_seconds"))}</td>'
-            f'</tr>'
+def _build_neg_detail_html(rounds: list[dict[str, Any]]) -> str:
+    """Build the inline negotiation steps HTML for a call's detail row."""
+    if not rounds:
+        return '<span class="empty">No negotiation rounds.</span>'
+    steps = []
+    for r in sorted(rounds, key=lambda x: int(x.get("negotiation_round") or 0)):
+        rnd = r.get("negotiation_round", "?")
+        offer = money(r.get("offer_rate"))
+        decision = str(r.get("decision") or "-").lower()
+        counter = money(r.get("counter_rate"))
+        accepted = money(r.get("accepted_rate"))
+
+        decision_color = {"accept": "var(--green)", "counter": "var(--blue)", "reject": "#dc2626"}.get(decision, "var(--muted)")
+        if decision == "accept":
+            result_text = f"Accepted at {accepted}"
+        elif decision == "counter":
+            result_text = f"Countered {counter}"
+        else:
+            result_text = "Rejected"
+
+        steps.append(
+            f'<div class="neg-step">'
+            f'<div class="neg-round">R{rnd}</div>'
+            f'<div class="neg-detail">'
+            f'<span>Carrier offered {offer}</span>'
+            f'<span class="neg-decision" style="color:{decision_color}">&rarr; {result_text}</span>'
+            f'</div></div>'
         )
+    return "".join(steps)
 
-    recent_table = "\n".join(recent_rows) or '<tr><td colspan="10" class="empty">No calls logged yet.</td></tr>'
-    avg_rounds = "-" if metrics["avg_rounds"] is None else f"{float(metrics['avg_rounds']):.1f}"
-    avg_spread = money(metrics["avg_rate_spread"]) if metrics["avg_rate_spread"] is not None else "-"
-    avg_dur = duration_fmt(metrics["avg_duration"])
-    offer_total = sum(int(item.get("count") or 0) for item in metrics["offer_decisions"])
 
+def render_dashboard(metrics: dict[str, Any]) -> str:
     # Group negotiation history by call_id
     negotiations_by_call: dict[str, list[dict[str, Any]]] = {}
     for ev in metrics.get("negotiation_history", []):
         cid = ev.get("call_id") or "unknown"
         negotiations_by_call.setdefault(cid, []).append(ev)
 
-    negotiation_cards = []
-    for call_id, rounds in list(negotiations_by_call.items())[:8]:
-        first = rounds[0]
-        carrier = escape(str(first.get("carrier_name") or "Unknown carrier"))
-        ref = escape(str(first.get("reference_number") or "-"))
-        listed = money(first.get("loadboard_rate"))
+    recent_rows = []
+    for row in metrics["recent_calls"]:
+        call_id = row.get("call_id") or ""
+        has_data = any(row.get(k) for k in ("carrier_name", "mc_number", "reference_number", "origin"))
+        dim = " dim-row" if not has_data else ""
+        has_neg = call_id in negotiations_by_call
+        clickable = " clickable" if has_neg else ""
+        rounds_count = int(row.get("negotiation_rounds") or 0)
+        rounds_display = f'{rounds_count} <span class="expand-icon">&#9654;</span>' if has_neg else str(rounds_count or "-")
 
-        steps_html = []
-        for r in sorted(rounds, key=lambda x: int(x.get("negotiation_round") or 0)):
-            rnd = r.get("negotiation_round", "?")
-            offer = money(r.get("offer_rate"))
-            decision = escape(str(r.get("decision") or "-"))
-            counter = money(r.get("counter_rate"))
-            accepted = money(r.get("accepted_rate"))
-
-            decision_color = {
-                "accept": "var(--green)",
-                "counter": "var(--blue)",
-                "reject": "#dc2626",
-            }.get(decision.lower(), "var(--muted)")
-
-            if decision.lower() == "accept":
-                result_text = f"Accepted at {accepted}"
-            elif decision.lower() == "counter":
-                result_text = f"Countered {counter}"
-            else:
-                result_text = "Rejected"
-
-            steps_html.append(
-                f'<div class="neg-step">'
-                f'<div class="neg-round">R{rnd}</div>'
-                f'<div class="neg-detail">'
-                f'<span>Carrier offered {offer}</span>'
-                f'<span class="neg-decision" style="color:{decision_color}">&rarr; {result_text}</span>'
-                f'</div></div>'
+        recent_rows.append(
+            f'<tr class="call-row{dim}{clickable}" data-call-id="{escape(call_id)}">'
+            f'<td>{escape(str(row.get("carrier_name") or "-"))}</td>'
+            f'<td>{escape(str(row.get("mc_number") or "-"))}</td>'
+            f'<td>{escape(str(row.get("reference_number") or "-"))}</td>'
+            f'<td>{escape(str(row.get("origin") or "-"))} &rarr; {escape(str(row.get("destination") or "-"))}</td>'
+            f'<td>{money(row.get("loadboard_rate"))}</td>'
+            f'<td>{money(row.get("final_rate"))}</td>'
+            f'<td>{rounds_display}</td>'
+            f'<td><span class="pill">{title(row.get("call_outcome"))}</span></td>'
+            f'<td>{title(row.get("carrier_sentiment"))}</td>'
+            f'<td>{duration_fmt(row.get("duration_seconds"))}</td>'
+            f'</tr>'
+        )
+        # Hidden detail row for negotiation steps
+        if has_neg:
+            neg_html = _build_neg_detail_html(negotiations_by_call[call_id])
+            recent_rows.append(
+                f'<tr class="detail-row" data-detail-for="{escape(call_id)}">'
+                f'<td colspan="10"><div class="neg-timeline">{neg_html}</div></td>'
+                f'</tr>'
             )
 
-        negotiation_cards.append(
-            f'<div class="neg-card">'
-            f'<div class="neg-header"><strong>{carrier}</strong><span class="neg-meta">Ref {ref} &middot; Listed {listed}</span></div>'
-            f'{"".join(steps_html)}'
-            f'</div>'
-        )
-
-    negotiation_section = "\n".join(negotiation_cards) if negotiation_cards else '<p class="empty">No negotiations recorded yet.</p>'
+    recent_table = "\n".join(recent_rows) or '<tr><td colspan="10" class="empty">No calls logged yet.</td></tr>'
+    avg_rounds = "-" if metrics["avg_rounds"] is None else f"{float(metrics['avg_rounds']):.1f}"
+    avg_spread = money(metrics["avg_rate_spread"]) if metrics["avg_rate_spread"] is not None else "-"
+    avg_dur = duration_fmt(metrics["avg_duration"])
+    offer_total = sum(int(item.get("count") or 0) for item in metrics["offer_decisions"])
 
     chart_labels = json.dumps([d["day"] for d in metrics["calls_per_day"]])
     chart_data = json.dumps([d["count"] for d in metrics["calls_per_day"]])
@@ -210,13 +209,19 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
     .pill {{ display:inline-block; border:1px solid var(--line); border-radius:999px; padding:2px 8px; background:#f8fafc; white-space:nowrap; font-size:12px; }}
     .empty {{ color:var(--muted); }}
     .dim-row {{ opacity:0.45; }}
-    .neg-card {{ background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin-bottom:12px; }}
-    .neg-header {{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px; }}
-    .neg-header strong {{ font-size:14px; }}
-    .neg-meta {{ color:var(--muted); font-size:12px; }}
-    .neg-step {{ display:flex; align-items:center; gap:10px; padding:6px 0; border-top:1px solid var(--line); }}
+    .call-row.clickable {{ cursor:pointer; }}
+    .call-row.clickable:hover {{ background:#f0f5ff; }}
+    .call-row.expanded {{ background:#f0f5ff; }}
+    .expand-icon {{ font-size:10px; color:var(--muted); transition:transform 0.2s; display:inline-block; }}
+    .call-row.expanded .expand-icon {{ transform:rotate(90deg); }}
+    .detail-row {{ display:none; }}
+    .detail-row.visible {{ display:table-row; }}
+    .detail-row td {{ padding:0 8px 12px 8px; background:#f8fafc; border-bottom:2px solid var(--line); }}
+    .neg-timeline {{ display:flex; gap:0; align-items:stretch; padding:12px 8px 4px; overflow-x:auto; }}
+    .neg-step {{ display:flex; align-items:center; gap:8px; padding:8px 14px; position:relative; }}
+    .neg-step:not(:last-child)::after {{ content:''; position:absolute; right:0; top:50%; transform:translateY(-50%); width:0; height:0; border-top:6px solid transparent; border-bottom:6px solid transparent; border-left:6px solid var(--line); }}
     .neg-round {{ width:30px; height:30px; border-radius:50%; background:var(--blue-light); color:var(--blue); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }}
-    .neg-detail {{ display:flex; gap:8px; font-size:13px; flex-wrap:wrap; }}
+    .neg-detail {{ display:flex; flex-direction:column; gap:2px; font-size:12px; white-space:nowrap; }}
     .neg-decision {{ font-weight:600; }}
     footer {{ color:var(--muted); font-size:12px; margin-top:18px; display:flex; justify-content:space-between; }}
     @media (max-width:980px) {{
@@ -277,15 +282,9 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
     </section>
     '''}
 
-    <!-- Negotiation History -->
-    <section class="panel">
-      <h2>Negotiation History</h2>
-      {negotiation_section}
-    </section>
-
     <!-- Recent Calls -->
     <section class="panel">
-      <h2>Recent Calls</h2>
+      <h2>Recent Calls <small style="font-weight:normal;color:var(--muted);font-size:12px">&mdash; click a row to view negotiation rounds</small></h2>
       <table>
         <thead>
           <tr>
@@ -330,6 +329,23 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
       const d = new Date(genAt);
       document.getElementById('genTime').textContent = 'Updated ' + d.toLocaleString();
     }}
+    // Expandable call rows
+    document.querySelectorAll('.call-row.clickable').forEach(row => {{
+      row.addEventListener('click', () => {{
+        const callId = row.dataset.callId;
+        const detail = document.querySelector(`.detail-row[data-detail-for="${{callId}}"]`);
+        if (!detail) return;
+        const isOpen = detail.classList.contains('visible');
+        // Close all
+        document.querySelectorAll('.detail-row.visible').forEach(d => d.classList.remove('visible'));
+        document.querySelectorAll('.call-row.expanded').forEach(r => r.classList.remove('expanded'));
+        // Toggle
+        if (!isOpen) {{
+          detail.classList.add('visible');
+          row.classList.add('expanded');
+        }}
+      }});
+    }});
     setTimeout(() => location.reload(), 30000);
   </script>
 </body>
